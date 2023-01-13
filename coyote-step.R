@@ -43,7 +43,7 @@ coyoteMR[doy > 121 & doy < 244, season := 'summer']
 coyoteMR <- coyoteMR[!(is.na(season))]
 coyoteMR <- coyoteMR[!is.na(coyoteMR$moveRate)]
 
-a1 <- gam(moveRate ~ s(hr), data = coyoteMR)
+a1 <- gam(moveRate ~ s(hr, bs = "cc"), data = coyoteMR)
 summary(a1)
 
 
@@ -56,8 +56,8 @@ ggplot(coyoteMR, aes(hr, pred)) +
 	geom_point() +
 	geom_line() +
 	ggtitle("Coyote activity between May 1 and Sept 1") +
-	ylab("Time of day") +
-	xlab("Predicted movement length (m/hr)") +
+	xlab("Time of day") +
+	ylab("Predicted movement length (m/hr)") +
 	geom_vline(xintercept = 6, lty = 2, color = "red") +
 	geom_vline(xintercept = 22, lty = 2, color = "red") +
 	theme_bw()
