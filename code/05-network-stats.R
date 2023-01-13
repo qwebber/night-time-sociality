@@ -11,6 +11,7 @@ library(data.table)
 library(ggplot2)
 library(lme4)
 library(performance)
+library(emmeans)
 
 ## load data
 fogo <- fread("output/tod-networks.csv")
@@ -38,22 +39,38 @@ hist(fogo$strength)
 fogo$logStrength <- log(fogo$strength + 0.125)
 
 ## regular linear regression
-model1 <- lm(logStrength ~ tod + season, data = fogo)
+model1 <- lm(logStrength ~ tod + season + Cover, data = fogo)
 summary(model1)
 
 ## simple mixed model
-model2 <- lmer(logStrength ~ tod + season + (1|ID), data = fogo)
+model2 <- lmer(logStrength ~ tod + season + Cover + (1|ID), data = fogo)
 summary(model2)
 
 ## more complicated mixed model
-model3 <- lmer(logStrength ~ tod * season + (1|yr) + (1|ID), data = fogo)
+model3 <- lmer(logStrength ~ Cover + (1|yr) + (1|ID), data = fogo[season == "winter" & tod == "night"])
 summary(model3)
+
+## emmeans provides the predicted value of strength for all combinations of tod, cover, and season
+##
+emdat <- data.frame(emmeans(model3, ~ tod * Cover))
+
+ggplot(data=emdat, aes(x=Cover,y=emmean, fill=tod)) +
+	geom_point(aes(color = tod),
+						 stat="identity",
+						 position = position_dodge(width = 0.5)) +
+	geom_errorbar(aes(ymin = (emmean - SE),
+										ymax = (emmean + SE),
+										color = tod),
+						 position = position_dodge(width = 0.5),
+						 width = 0)
+	facet_wrap(~season)
 
 ## model checks
 check_model(model3)
 model_performance(model3)
 
 ## plot results (we can work on this)
-ggplot(fogo) +
-	geom_boxplot(aes(tod, logStrength)) +
-	facet_wrap(~season)
+ggplot(fogo, aes(Cover, logStrength)) +
+	geom_boxplot() +
+	geom_jitter(aes(color = Cover), alpha = 0.5) +
+	facet_wrap(~season * tod)
