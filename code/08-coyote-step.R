@@ -135,6 +135,7 @@ coyRSF <- coyRSF[model == "coyote" |
 coyRSF <- coyRSF[variable != "Water" &
 								 	variable != "Anthro"]
 
+#### FIGURE 1 #####
 
 a <- ggplot(aa[season == "Spring"], aes(hr, V1, color = season)) +
 	geom_smooth(method = "gam") +

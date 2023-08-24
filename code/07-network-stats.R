@@ -116,6 +116,7 @@ ggplot(data=emdat, aes(x=Cover,y=emmean, fill=`Time of Day`)) +
 	facet_wrap(~season)
 dev.off()
 
+#### FIGURE 2 #####
 
 png("figures/fig2.png",
 		width = 4000,
@@ -147,7 +148,7 @@ dev.off()
 pairsW <- as.data.table(pairsW)
 
 
-## pairwise figs
+#### FIGURE 3 #####
 
 theme_pairs <- theme(legend.position = 'none',
 											strip.background = element_rect(color = "black",
