@@ -19,11 +19,11 @@ fogo[, hr := hour(datetime)]
 
 # assign season
 fogo[doy >= 15 & doy <= 63, season := 'winter']
-fogo[doy >= 196 & doy <= 244, season := 'summer']
+fogo[doy >= 122 & doy <= 170, season := 'spring']
 fogo <- fogo[!(is.na(season))]
 
 fogoW <- fogo[season == 'winter']
-fogoS <- fogo[season == 'summer']
+fogoS <- fogo[season == 'spring']
 
 ## average sunrise and sunset in winter
 ## sunrise: Jan 15 = 7:57am; March 4 = 6:41am (average 7:19am)

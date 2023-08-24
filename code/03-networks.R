@@ -25,9 +25,3 @@ nets <- dynamic_network(fogo,
 												by = c('yr', 'season', 'tod', 'Cover'))
 
 fwrite(nets, "output/tod-networks.csv")
-
-source("functions/get_graph.R")
-
-nets <- get_graph(fogo,
-												id = 'id' ) #,
-												by = c('yr', 'season', 'tod'))
