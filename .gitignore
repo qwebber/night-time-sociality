@@ -1,7 +1,7 @@
 # Directories with large files #
 ################################
-input/
-output/
+fogo-gsp.csv
+rdmNets-1000.RDS
 
 # R related files #
 ###################
