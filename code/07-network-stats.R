@@ -6,11 +6,17 @@ library(lme4)
 library(performance)
 library(emmeans)
 library(Rmisc)
+library(dplyr) # added for data manipulation
+library(lvplot) #added for letter value boxplots
+## missing some packages (I didn't have lmerTest and pbkrtest installed)
 
 ## load data
 fogo <- fread("output/tod-networks.csv")
 coefs <- fread("output/rdm-coefs.csv")
-ems <- fread("output/rdm-ems.csv")
+ems <- fread("output/rdm-ems.csv") %>%
+	mutate(contrast = gsub("day", "Day", #cleaning contrast labels for consistency
+												 gsub("night", "Night",
+												 		 gsub("openMove", "Rocky barrens", contrast)))) # I made a leap here that openMove is rocky barrens?
 
 fogo[, .N, by = c("yr", "tod", "season", "Cover")]
 
@@ -87,7 +93,7 @@ png("figures/fig2.png",
 		height = 2500,
 		res = 600,
 		units = "px")
-ggplot(data=emdat, aes(x=Cover,y=emmean, fill=`Time of Day`)) +
+ggplot(data=emdat, aes(x=Cover,y=emmean, fill=`Time of Day`)) + ## FYI this is not reproducible, gives an error message missing season variable
 	geom_point(aes(color = `Time of Day`),
 						 stat="identity",
 						 position = position_dodge(width = 0.5)) +
@@ -145,10 +151,28 @@ ggplot(fogo, aes(Cover, logStrength, color = IDYr, group = IDYr)) +
 dev.off()
 
 
-pairsW <- as.data.table(pairsW)
-
 
 #### FIGURE 3 #####
+pairsW <- as.data.table(pairsW) # translate model output to estimate data
+
+#calculate the quantiles in advance, join with the estimates from contrasts for plotting
+ems_quantiles <- ems %>%
+	group_by(contrast) %>%
+	summarize(lower = quantile(estimate, probs = .025),
+						upper = quantile(estimate, probs = .975),
+						median = median(estimate),
+						mid_lower = quantile(estimate, probs = .25),
+						mid_upper = quantile(estimate, probs = .75),
+						min = min(estimate),
+						max = max(estimate)) %>%
+	mutate(contrast = gsub("day", "Day",
+												 gsub("night", "Night",
+												 		 gsub("openMove", "Rocky barrens", contrast)))) %>%
+	left_join(., pairsW) %>%
+	mutate(type = ifelse(p.value < 0.05, "Significant", "Non-Significant"),
+				 contrast_N = 1:15)
+
+ems <-left_join(ems, ems_quantiles[,c("contrast","type")], by = "contrast") # if you want to colour by significance
 
 theme_pairs <- theme(legend.position = 'none',
 											strip.background = element_rect(color = "black",
@@ -165,6 +189,53 @@ theme_pairs <- theme(legend.position = 'none',
 											panel.border = element_rect(color = "black", fill=NA, size = 1))
 
 
+#this is the original figure in simpler code (easier to read)
+#this needs minor adjustments to make it perfectly like the original (A-O subtitles instead of the current titles)
+ggplot(data = ems, aes(x = estimate)) +
+	geom_histogram(binwidth = 0.025) +
+	facet_wrap(~contrast, ncol = 5, scales = "free") +
+	geom_vline(data = ems_quantiles, aes(xintercept = lower), linetype = 2) +
+	geom_vline(data = ems_quantiles, aes(xintercept = upper), linetype = 2) +
+	geom_vline(data = ems_quantiles, aes(xintercept = estimate), color = "red", size = 1.5)  +
+	labs(x = "Estimate", y = "Frequency") +
+	theme_pairs
+
+
+#trying letter value boxplot
+#ggplot(data = ems, aes(x = as.factor(contrast), y = estimate)) +
+#geom_lv(aes(), k = 3) + # cannot specify k percentage range so can't customize this
+#coord_flip()
+
+#boxplot
+ggplot(data = ems, aes(x = as.factor(contrast), y = estimate)) +
+	geom_boxplot(aes(ymin = min(estimate),
+											lower = quantile(estimate, 0.025),
+											middle = median(estimate),
+											upper = quantile(estimate, 0.975),
+											ymax = max(estimate),
+									 fill = type), outlier.shape = NA, linewidth = .5) +
+	scale_fill_manual(values = c("grey","cornflowerblue"))+
+	geom_point(data = ems_quantiles, aes(x = as.factor(contrast), y = estimate, color = type), shape = 8) +
+	scale_color_manual(values = c("grey18", "royalblue3")) +
+	labs(y = "Estimate", x = "Contrast") +
+	coord_flip() +
+	theme_pairs
+
+#hack it with geom_rect
+
+ggplot(data = ems_quantiles) +
+	geom_linerange(aes(x = contrast_N, ymin = min, ymax = max)) + # shows the extent of the entire range, can be removed if we want to stick with the .025/.975
+	geom_rect(aes(xmin = contrast_N-.2, xmax = contrast_N+.2, ymin = lower, ymax = upper), fill = "grey50") +
+	geom_rect(aes(xmin = contrast_N-.4, xmax = contrast_N+.4, ymin = mid_lower, ymax = mid_upper), fill = "grey25")+
+	#geom_point(data = ems_quantiles, aes(x = contrast_N, y = median), color = "black", size = 2, shape = 20) + #displays median point if we want to display
+	geom_point(aes(x = contrast_N, y = estimate, color = type), shape = 8) +
+	scale_color_manual(values = c("black","red")) + #red indicates significance by p-value
+	coord_flip() +
+	labs(y = "Estimate", x = NULL) +
+	scale_x_continuous( breaks = 1:15, labels = ems_quantiles$contrast) +
+	theme_pairs
+
+#### ORIGINAL FIGURE 3 ####
 
 c1 <- ggplot() +
 	geom_histogram(data = ems[contrast == "day Forest - night Forest"],
