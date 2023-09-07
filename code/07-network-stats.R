@@ -7,7 +7,6 @@ library(performance)
 library(emmeans)
 library(Rmisc)
 library(dplyr) # added for data manipulation
-library(lvplot) #added for letter value boxplots
 ## missing some packages (I didn't have lmerTest and pbkrtest installed)
 
 ## load data
@@ -169,7 +168,7 @@ ems_quantiles <- ems %>%
 												 gsub("night", "Night",
 												 		 gsub("openMove", "Rocky barrens", contrast)))) %>%
 	left_join(., pairsW) %>%
-	mutate(type = ifelse(p.value < 0.05, "Significant", "Non-Significant"),
+	mutate(type = ifelse((estimate<lower|estimate>upper), "Significant", "Non-Significant"),
 				 contrast_N = 1:15)
 
 ems <-left_join(ems, ems_quantiles[,c("contrast","type")], by = "contrast") # if you want to colour by significance
@@ -189,39 +188,12 @@ theme_pairs <- theme(legend.position = 'none',
 											panel.border = element_rect(color = "black", fill=NA, size = 1))
 
 
-#this is the original figure in simpler code (easier to read)
-#this needs minor adjustments to make it perfectly like the original (A-O subtitles instead of the current titles)
-ggplot(data = ems, aes(x = estimate)) +
-	geom_histogram(binwidth = 0.025) +
-	facet_wrap(~contrast, ncol = 5, scales = "free") +
-	geom_vline(data = ems_quantiles, aes(xintercept = lower), linetype = 2) +
-	geom_vline(data = ems_quantiles, aes(xintercept = upper), linetype = 2) +
-	geom_vline(data = ems_quantiles, aes(xintercept = estimate), color = "red", size = 1.5)  +
-	labs(x = "Estimate", y = "Frequency") +
-	theme_pairs
-
-
-#trying letter value boxplot
-#ggplot(data = ems, aes(x = as.factor(contrast), y = estimate)) +
-#geom_lv(aes(), k = 3) + # cannot specify k percentage range so can't customize this
-#coord_flip()
-
-#boxplot
-ggplot(data = ems, aes(x = as.factor(contrast), y = estimate)) +
-	geom_boxplot(aes(ymin = min(estimate),
-											lower = quantile(estimate, 0.025),
-											middle = median(estimate),
-											upper = quantile(estimate, 0.975),
-											ymax = max(estimate),
-									 fill = type), outlier.shape = NA, linewidth = .5) +
-	scale_fill_manual(values = c("grey","cornflowerblue"))+
-	geom_point(data = ems_quantiles, aes(x = as.factor(contrast), y = estimate, color = type), shape = 8) +
-	scale_color_manual(values = c("grey18", "royalblue3")) +
-	labs(y = "Estimate", x = "Contrast") +
-	coord_flip() +
-	theme_pairs
-
-#hack it with geom_rect
+#significance indicated by coloured estimate, determined by whether the estimate is outside of the 2.5-97.5 quantiles
+png("figures/fig3.png",
+		width = 10000,
+		height = 6000,
+		res = 600,
+		units = "px")
 
 ggplot(data = ems_quantiles) +
 	geom_linerange(aes(x = contrast_N, ymin = min, ymax = max)) + # shows the extent of the entire range, can be removed if we want to stick with the .025/.975
@@ -234,227 +206,9 @@ ggplot(data = ems_quantiles) +
 	labs(y = "Estimate", x = NULL) +
 	scale_x_continuous( breaks = 1:15, labels = ems_quantiles$contrast) +
 	theme_pairs
-
-#### ORIGINAL FIGURE 3 ####
-
-c1 <- ggplot() +
-	geom_histogram(data = ems[contrast == "day Forest - night Forest"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Day Forest - Night Forest"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "day Forest - night Forest"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "day Forest - night Forest"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("A) Day forest - Night forest") +
-	theme_pairs
-
-c2 <- ggplot() +
-	geom_histogram(data = ems[contrast == "day Forest - day Lichen"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Day Forest - Day Lichen"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "day Forest - day Lichen"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "day Forest - day Lichen"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("B) Day forest - Day Lichen") +
-	theme_pairs
-
-c3 <- ggplot() +
-	geom_histogram(data = ems[contrast == "day Forest - night Lichen"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Day Forest - Night Lichen"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "day Forest - night Lichen"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "day Forest - night Lichen"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("C) Day forest - Night Lichen") +
-	theme_pairs
-
-c4 <- ggplot() +
-	geom_histogram(data = ems[contrast == "day Forest - day openMove"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Day Forest - Day Rocky barrens"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "day Forest - day openMove"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "day Forest - day openMove"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("D) Day forest - Day Rocky barrens") +
-	theme_pairs
-
-c5 <- ggplot() +
-	geom_histogram(data = ems[contrast == "day Forest - night openMove"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Day Forest - Night Rocky barrens"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "day Forest - night openMove"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "day Forest - night openMove"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("E) Day forest - Night Rocky barrens") +
-	theme_pairs
-
-c6 <- ggplot() +
-	geom_histogram(data = ems[contrast == "night Forest - day Lichen"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Night Forest - Day Lichen"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "night Forest - day Lichen"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "night Forest - day Lichen"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("F) Night forest - Day Lichen") +
-	theme_pairs
-
-c7 <- ggplot() +
-	geom_histogram(data = ems[contrast == "night Forest - night Lichen"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Night Forest - Night Lichen"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "night Forest - night Lichen"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "night Forest - night Lichen"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("G) Night forest - Night Lichen") +
-	theme_pairs
-
-c8 <- ggplot() +
-	geom_histogram(data = ems[contrast == "night Forest - day openMove"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Night Forest - Day Rocky barrens"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "night Forest - day openMove"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "night Forest - day openMove"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("H) Night forest - Day Rocky barrens") +
-	theme_pairs
-
-c9 <- ggplot() +
-	geom_histogram(data = ems[contrast == "night Forest - night openMove"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Night Forest - Night Rocky barrens"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "night Forest - night openMove"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "night Forest - night openMove"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("I) Night forest - Night Rocky barrens") +
-	theme_pairs
-
-c10 <- ggplot() +
-	geom_histogram(data = ems[contrast == "day Lichen - night Lichen"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Day Lichen - Night Lichen"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "day Lichen - night Lichen"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "day Lichen - night Lichen"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("J) Day Lichen - Night Lichen") +
-	theme_pairs
-
-c11 <- ggplot() +
-	geom_histogram(data = ems[contrast == "day Lichen - day openMove"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Day Lichen - Day Rocky barrens"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "day Lichen - day openMove"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "day Lichen - day openMove"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("K) Day Lichen - Day Rocky barrens") +
-	theme_pairs
-
-c12 <- ggplot() +
-	geom_histogram(data = ems[contrast == "day Lichen - night openMove"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Day Lichen - Night Rocky barrens"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "day Lichen - night openMove"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "day Lichen - night openMove"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("L) Day Lichen - Night Rocky barrens") +
-	theme_pairs
-
-c13 <- ggplot() +
-	geom_histogram(data = ems[contrast == "night Lichen - day openMove"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Night Lichen - Day Rocky barrens"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "night Lichen - day openMove"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "night Lichen - day openMove"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("M) Night Lichen - Day Rocky barrens") +
-	theme_pairs
-
-c14 <- ggplot() +
-	geom_histogram(data = ems[contrast == "night Lichen - night openMove"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Night Lichen - Night Rocky barrens"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "night Lichen - night openMove"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "night Lichen - night openMove"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("N) Night Lichen - Night Rocky barrens") +
-	theme_pairs
-
-c15 <- ggplot() +
-	geom_histogram(data = ems[contrast == "day openMove - night openMove"],
-								 aes(estimate)) +
-	geom_vline(data = pairsW[contrast == "Day Rocky barrens - Night Rocky barrens"],
-						 aes(xintercept = estimate), color = 'red', size = 1.5) +
-	geom_vline(data = ems[contrast == "day openMove - night openMove"],
-						 aes(xintercept = quantile(estimate, 0.025)), lty = 2) +
-	geom_vline(data = ems[contrast == "day openMove - night openMove"],
-						 aes(xintercept = quantile(estimate, 0.975)), lty = 2) +
-	xlab("Estimate") +
-	ylab("Frequency") +
-	ggtitle("O) Day Rocky barrens - Night Rocky barrens") +
-	theme_pairs
-
-
-png("figures/fig3.png",
-		width = 10000,
-		height = 6000,
-		res = 600,
-		units = "px")
-grid.arrange(c1, c2, c3, c4, c5,
-						 c6, c7, c8, c9, c10,
-						 c11, c12, c13, c14, c15,
-						 nrow = 3, ncol = 5)
 dev.off()
+
+#this is the original figure style in simpler code (easier to read)
+#does not have A) to O) labels currently
+#ggplot(data = ems, aes(x = estimate)) + geom_histogram(binwidth = 0.025) + facet_wrap(~contrast, ncol = 5, scales = "free") + geom_vline(data = ems_quantiles, aes(xintercept = lower), linetype = 2) + geom_vline(data = ems_quantiles, aes(xintercept = upper), linetype = 2) + geom_vline(data = ems_quantiles, aes(xintercept = estimate), color = "red", size = 1.5) + labs(x = "Estimate", y = "Frequency") + theme_pairs
+
