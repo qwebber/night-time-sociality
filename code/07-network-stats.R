@@ -179,9 +179,9 @@ theme_pairs <- theme(legend.position = 'none',
 																											size = 1),
 											strip.text = element_text(size = 10,
 																								color = "black"),
-											axis.text = element_text(size = 10,
+											axis.text = element_text(size = 20,
 																							 color = "black"),
-											axis.title = element_text(size = 14),
+											axis.title = element_text(size = 26),
 										  plot.title = element_text(size = 10),
 											panel.grid.minor = element_blank(),
 											panel.background = element_blank(),
@@ -200,8 +200,9 @@ ggplot(data = ems_quantiles) +
 	geom_rect(aes(xmin = contrast_N-.2, xmax = contrast_N+.2, ymin = lower, ymax = upper), fill = "grey50") +
 	geom_rect(aes(xmin = contrast_N-.4, xmax = contrast_N+.4, ymin = mid_lower, ymax = mid_upper), fill = "grey25")+
 	#geom_point(data = ems_quantiles, aes(x = contrast_N, y = median), color = "black", size = 2, shape = 20) + #displays median point if we want to display
-	geom_point(aes(x = contrast_N, y = estimate, color = type), shape = 8) +
-	scale_color_manual(values = c("black","red")) + #red indicates significance by p-value
+	geom_point(aes(x = contrast_N, y = estimate), size = 4.5, color = "black") +
+	geom_point(aes(x = contrast_N, y = estimate, color = type), size = 4) +
+	scale_color_manual(values = c("white","red")) + #red indicates significance by p-value
 	coord_flip() +
 	labs(y = "Estimate", x = NULL) +
 	scale_x_continuous( breaks = 1:15, labels = ems_quantiles$contrast) +
