@@ -75,7 +75,18 @@ setnames(emdat, "tod", "Time of Day")
 
 ## leave out season from the Tukey's test comparison
 emW <- emmeans(model3win, ~ tod * Cover)
+emW <- as.data.table(emW)
+emW$season <- "Winter"
+
 emS <- emmeans(model3sum, ~ tod * Cover)
+emS <- as.data.table(emS)
+emS$season <- "Spring"
+
+## combine Tukey's data for seasons
+emAll <- rbind(emW, emS)
+setnames(emAll, "tod", "Time of Day")
+
+
 
 ## pairwise comparison corrected using Tukey's test
 pairsW <- pairs(emW, adjust = "tukey")
@@ -87,7 +98,7 @@ png("figures/fig2.png",
 		height = 2500,
 		res = 600,
 		units = "px")
-ggplot(data=emdat, aes(x=Cover,y=emmean, fill=`Time of Day`)) +
+ggplot(data=emAll, aes(x=Cover,y=emmean, fill=`Time of Day`)) +
 	geom_point(aes(color = `Time of Day`),
 						 stat="identity",
 						 position = position_dodge(width = 0.5)) +
