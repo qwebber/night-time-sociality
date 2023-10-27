@@ -103,6 +103,13 @@ coyote <- coyote[idyrseason != "co_np0906_2010_Winter" &
 coyoteSUM <- coyote[season == "Spring"]
 coyoteWIN <- coyote[season == "Winter"]
 
+## variable number of steps per hour; pool hrs with small sample sizes
+coyoteWIN[, .N, by = "hr"]
+
+coyoteWIN$hr[coyoteWIN$hr == 1] <- 0
+coyoteWIN$hr[coyoteWIN$hr == 13] <- 14
+coyoteWIN$hr[coyoteWIN$hr == 21] <- 22
+coyoteWIN$hr[coyoteWIN$hr == 9] <- 10
 
 
 a1 <- gamm4(moveRate ~ s(hr, bs = "cc") + log(doy) + as.factor(yr), random = ~(1|id), data = coyoteSUM)
@@ -116,13 +123,18 @@ summary(a2$gam)
 coyoteSUM$pred <- predict(a1$gam)
 coyoteWIN$pred <- predict(a2$gam)
 
+
+
 coyALL <- rbind (coyoteSUM, coyoteWIN)
+
 
 coyALL[, .N, by = c("hr", "season")]
 
 
 
 aa <- coyALL[, mean(pred), by = c("season", "hr")]
+
+
 
 ### load coyote RSF data
 
@@ -132,8 +144,14 @@ coyRSF <- coyRSF[model == "coyote" |
 								 	model == "summercaribou" |
 								 	model == "wintercaribou"]
 
+
 coyRSF <- coyRSF[variable != "Water" &
-								 	variable != "Anthro"]
+								 	variable != "Anthro" &
+								 	variable != "Elevation" &
+								 	variable != "Scrub"]
+
+coyRSF$variable[coyRSF$variable == "Rock"] <- "Open"
+
 
 #### FIGURE 1 #####
 
@@ -191,7 +209,7 @@ c <- ggplot(coyRSF[model == "coyote" & variable != "Wetland"], aes(variable, bet
 								position = position_dodge(width = 0.5)) +
 	geom_point(aes(color = factor(model)), position = position_dodge(width = 0.5), size = 4) +
 	coord_flip() +
-	geom_hline(yintercept = 0.5, linetype = 'dotted') +
+	geom_hline(yintercept = 0, linetype = 'dotted') +
 	geom_vline(xintercept = 1.5, linetype = 'dotted') +
 	geom_vline(xintercept = 2.5, linetype = 'dotted') +
 	geom_vline(xintercept = 3.5, linetype = 'dotted') +
@@ -200,7 +218,7 @@ c <- ggplot(coyRSF[model == "coyote" & variable != "Wetland"], aes(variable, bet
 	ggtitle("C) All seasons") +
 	ylim(-7,10) +
 	xlab("") +
-	ylab("Beta coefficient (+/- 95% CI)") +
+	ylab("Selection coefficient (+/- 95% CI)") +
 	scale_shape_manual(name = "Model",
 										 values = shp,
 										 labels = c("Coyote",
