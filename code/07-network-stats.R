@@ -103,11 +103,7 @@ png("figures/fig2.png",
 		height = 2500,
 		res = 600,
 		units = "px")
-<<<<<<< HEAD
 ggplot(data=emAll, aes(x=Cover,y=emmean, fill=`Time of Day`)) +
-=======
-ggplot(data=emdat, aes(x=Cover,y=emmean, fill=`Time of Day`)) + ## FYI this is not reproducible, gives an error message missing season variable
->>>>>>> d7e668628213a51ffa8994379bfcd9c86f4625d5
 	geom_point(aes(color = `Time of Day`),
 						 stat="identity",
 						 position = position_dodge(width = 0.5)) +
