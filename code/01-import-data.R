@@ -32,8 +32,8 @@ fogoW[hr >= 17 | hr <= 7, tod := 'night']
 fogoW[hr <= 17 & hr >= 7, tod := 'day']
 
 ## average sunrise and sunset in winter
-## sunruse: July 15 = 5:16am; Sept 1 = 6:23am (average 5:49am)
-## sunset: July 15 = 9:08pm; Sept 1 = 7:49pm (average 8:29pm)
+## sunruse: May 1 = 5:44am; June 19 = 4:58am (average 5:22am)
+## sunset: May 1 = 8:24pm; June 19 = 9:17pm (average 8:50pm)
 fogoS[hr >= 2030 | hr <= 6, tod := 'night']
 fogoS[hr <= 2030 & hr >= 6, tod := 'day']
 
