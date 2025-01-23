@@ -32,7 +32,7 @@ DT$Value[is.na(DT$Value)] <- 10
 DT <- merge(DT, Legend, by = 'Value')
 
 ## check number of fixes by habitat type:
-DT[, .N, by = "Cover"]
+DT[, .N, by = c("Cover", "season")]
 
 ## combine habitat types
 DT$Cover[DT$Cover == "Wetland"] <- "openMove"
