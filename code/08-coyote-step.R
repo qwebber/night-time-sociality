@@ -26,12 +26,9 @@ coyoteLA <- fread("../prepare-locs/output/NL-Provincial-Coyote-Telemetry_LAPOILE
 coyoteNP <- fread("../prepare-locs/output/NL-Provincial-Coyote-Telemetry_NOPENINS.csv")
 coyote <- rbind(coyoteLA, coyoteMR, coyoteNP)
 
-## load caribou data
-fogo <- fread("output/fogo-gsp.csv")
 
 ## rename vars to EASTING/NORTHING
 setnames(coyote, c("x_proj", "y_proj"), c("EASTING", "NORTHING"))
-setnames(fogo, c("x_proj", "y_proj"), c("EASTING", "NORTHING"))
 
 coyote <- coyote[(lowEast < EASTING & EASTING < highEast) &
 						 	(lowNorth < NORTHING & NORTHING < highNorth)]
@@ -45,13 +42,7 @@ step_length(
 	moverate = TRUE
 )
 
-step_length(
-	fogo,
-	coords = projCols,
-	time = 'datetime',
-	splitBy = c('id', 'yr'),
-	moverate = TRUE
-)
+
 
 # Create lag and dif column names
 lag.cols <- paste('lag', projCols, sep = '')
@@ -134,34 +125,18 @@ coyALL[, .N, by = c("hr", "season")]
 
 aa <- coyALL[, mean(pred), by = c("season", "hr")]
 
-
-
-### load coyote RSF data
-
-coyRSF <- fread("../fogo_coyote_repeat/data/derived-data/model_betas.csv")
-
-coyRSF <- coyRSF[model == "coyote" |
-								 	model == "summercaribou" |
-								 	model == "wintercaribou"]
-
-
-coyRSF <- coyRSF[variable != "Water" &
-								 	variable != "Anthro" &
-								 	variable != "Elevation" &
-								 	variable != "Scrub"]
-
-coyRSF$variable[coyRSF$variable == "Rock"] <- "Open"
-
+write.csv(aa, "output/coyote-all-move.csv")
 
 #### FIGURE 1 #####
 
-a <- ggplot(aa[season == "Spring"], aes(hr, V1, color = season)) +
+a <- ggplot(data = aa[season == "Spring"],
+						aes(hr, V1, color = season)) +
 	geom_smooth(method = "gam") +
 	xlab("Hour of day") +
 	ylim(200, 650) +
 	ylab("Predicted movement rate (m/hr)") +
 	scale_color_manual(values = c("#e34a33")) +
-	geom_vline(data = coyALL[season == "Summer"],
+	geom_vline(data = coyALL[season == "Spring"],
 						 aes(xintercept = 6), lty = 2, color = "#e34a33") +
 	geom_vline(data = coyALL[season == "Summer"],
 						 aes(xintercept = 21), lty = 2, color = "#e34a33") +
@@ -198,61 +173,3 @@ b <- ggplot(aa[season == "Winter"], aes(hr, V1, color = season)) +
 				panel.grid.minor = element_blank(),
 				panel.background = element_blank(),
 				panel.border = element_rect(colour = "black", fill=NA, size = 1))
-
-
-col = c("black", "#e34a33", "#2b8cbe")
-shp = c(16, 15, 15)
-
-c <- ggplot(coyRSF[model == "coyote" & variable != "Wetland"], aes(variable, beta, shape = model, group = model)) +
-	geom_errorbar(aes(ymin=lower, ymax=upper),
-								width = 0, size = 0.55,
-								position = position_dodge(width = 0.5)) +
-	geom_point(aes(color = factor(model)), position = position_dodge(width = 0.5), size = 4) +
-	coord_flip() +
-	geom_hline(yintercept = 0, linetype = 'dotted') +
-	geom_vline(xintercept = 1.5, linetype = 'dotted') +
-	geom_vline(xintercept = 2.5, linetype = 'dotted') +
-	geom_vline(xintercept = 3.5, linetype = 'dotted') +
-	geom_vline(xintercept = 4.5, linetype = 'dotted') +
-	geom_vline(xintercept = 5.5, linetype = 'dotted') +
-	ggtitle("C) All seasons") +
-	ylim(-7,10) +
-	xlab("") +
-	ylab("Selection coefficient (+/- 95% CI)") +
-	scale_shape_manual(name = "Model",
-										 values = shp,
-										 labels = c("Coyote",
-										 					 "Caribou: Summer",
-										 					 "Caribou: Winter"
-										 					 )) +
-	scale_color_manual(name = "Model",
-										 values = col,
-										 labels = c("Coyote",
-										 					 "Caribou: Summer",
-										 					 "Caribou: Winter"
-										 					 )) +
-	theme(legend.position = 'none',
-		#legend.position = c(0.75,0.9),
-				legend.title = element_blank(),
-				legend.background = element_rect(color = "black"),
-				legend.key = element_blank(),
-				legend.key.size = unit(0.5,"cm"),
-				legend.key.width = unit(0.5,"cm"),
-				legend.text = element_text(size = 9),
-				axis.title = element_text(size=18, color = "black"),
-				axis.text = element_text(size=12, color = "black"),
-				panel.grid.minor = element_blank(),
-				panel.background = element_blank(),
-				panel.border = element_rect(colour = "black", fill=NA, size=1))
-
-library(patchwork)
-
-png("figures/fig1.png",
-		width = 6000,
-		height = 4000,
-		res = 600,
-		units = "px")
-
- (a / b) | c
-
-dev.off()
