@@ -15,6 +15,8 @@
 This repository contains the code to produce caribou social networks as well as caribou and predator movement rates to test the risky times and risky places hypotheses.
 Scripts are under `code/`, data used to run models and generate figures is available under `output/`, and raw data are available upon request.
 
+The manuscript is in revision at Canadian Journal of Zoology.
+
 
 ## Abstract
 
