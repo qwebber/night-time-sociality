@@ -80,22 +80,20 @@ setnames(emdat, "tod", "Time of Day")
 
 ## leave out season from the Tukey's test comparison
 emW <- emmeans(model3win, ~ tod * Cover)
+pairsW <- pairs(emW, adjust = "Bonferroni")
+pairsW
 emW <- as.data.table(emW)
 emW$season <- "Winter"
 
 emS <- emmeans(model3sum, ~ tod * Cover)
+pairsS <- pairs(emS, adjust = "Bonferroni")
+pairsS
 emS <- as.data.table(emS)
 emS$season <- "Spring"
 
 ## combine Tukey's data for seasons
 emAll <- rbind(emW, emS)
 setnames(emAll, "tod", "Time of Day")
-
-
-
-## pairwise comparison corrected using Tukey's test
-pairsW <- pairs(emW, adjust = "tukey")
-pairsS <- pairs(emS, adjust = "tukey")
 
 ## plot results
 png("figures/fig2.png",
@@ -132,36 +130,6 @@ ggplot(data=emAll, aes(x=Cover,y=emmean, fill=`Time of Day`)) +
 	facet_wrap(~season)
 dev.off()
 
-#### FIGURE 2 #####
-
-png("figures/fig2.png",
-		width = 4000,
-		height = 4000,
-		res = 600,
-		units = "px")
-ggplot(fogo, aes(Cover, logStrength, color = IDYr, group = IDYr)) +
-	geom_point() +
-	geom_line() +
-	scale_color_viridis_d() +
-	xlab("Habitat type") +
-	ylab("log(social strength)") +
-	theme(legend.position = 'none',
-				strip.background = element_rect(color = "black",
-																				fill = "white",
-																				size = 1),
-				strip.text = element_text(size = 10,
-																	color = "black"),
-				axis.text = element_text(size = 10,
-																 color = "black"),
-				axis.title = element_text(size = 14),
-				panel.grid.minor = element_blank(),
-				panel.background = element_blank(),
-				panel.border = element_rect(color = "black", fill=NA, size = 1)) +
-	facet_wrap(~season*tod)
-dev.off()
-
-
-
 #### FIGURE 3 #####
 pairsW <- as.data.table(pairsW) # translate model output to estimate data
 
@@ -182,7 +150,7 @@ ems_quantiles <- ems %>%
 	mutate(type = ifelse((estimate<lower|estimate>upper), "Significant", "Non-Significant"),
 				 contrast_N = 1:15)
 
-ems <-left_join(ems, ems_quantiles[,c("contrast","type")], by = "contrast") # if you want to colour by significance
+emw <-left_join(pairsW, ems_quantiles[,c("contrast","type")], by = "contrast") # if you want to colour by significance
 
 theme_pairs <- theme(legend.position = 'none',
 											strip.background = element_rect(color = "black",
@@ -201,16 +169,16 @@ theme_pairs <- theme(legend.position = 'none',
 
 #significance indicated by coloured estimate, determined by whether the estimate is outside of the 2.5-97.5 quantiles
 png("figures/fig3.png",
-		width = 10000,
-		height = 6000,
-		res = 600,
+		width = 8000,
+		height = 4000,
+		res = 500,
 		units = "px")
 
 ggplot(data = ems_quantiles) +
 	geom_linerange(aes(x = contrast_N, ymin = min, ymax = max)) + # shows the extent of the entire range, can be removed if we want to stick with the .025/.975
-	geom_rect(aes(xmin = contrast_N-.2, xmax = contrast_N+.2, ymin = lower, ymax = upper), fill = "grey50") +
-	geom_rect(aes(xmin = contrast_N-.4, xmax = contrast_N+.4, ymin = mid_lower, ymax = mid_upper), fill = "grey25")+
-	#geom_point(data = ems_quantiles, aes(x = contrast_N, y = median), color = "black", size = 2, shape = 20) + #displays median point if we want to display
+	geom_rect(aes(xmin = contrast_N-0.2, xmax = contrast_N+0.2, ymin = lower, ymax = upper), fill = "grey50") +
+	geom_rect(aes(xmin = contrast_N-.4, xmax = contrast_N+.4, ymin = mid_lower, ymax = mid_upper), fill = "grey25") +
+	geom_point(data = ems_quantiles, aes(x = contrast_N, y = median), color = "black", size = 2, shape = 20) + #displays median point if we want to display
 	geom_point(aes(x = contrast_N, y = estimate), size = 4.5, color = "black") +
 	geom_point(aes(x = contrast_N, y = estimate, color = type), size = 4) +
 	scale_color_manual(values = c("white","red")) + #red indicates significance by p-value
